@@ -1,6 +1,7 @@
 provider "google" {
   project = var.gcp_project_id
   region  = "us-central1"
+  credentials = file(var.gcp_credentials_file) 
 }
 
 # Create VPC
@@ -26,7 +27,7 @@ resource "google_compute_subnetwork" "public_subnet_2" {
   private_ip_google_access = false
 }
 
-# Create Private Subnets
+# Create Private Subnets (Not needed if Cloud Run doesn't need private VPC access)
 resource "google_compute_subnetwork" "private_subnet_1" {
   name          = "private-subnet-1"
   region        = "us-central1"
@@ -43,52 +44,33 @@ resource "google_compute_subnetwork" "private_subnet_2" {
   private_ip_google_access = true
 }
 
-# Create a Cloud Run Service for the SimpleTimeService Docker Container
 resource "google_cloud_run_service" "simpletimeservice" {
   name     = "simpletimeservice"
   location = "us-central1"
+  
   template {
     spec {
       containers {
-        image = "gcr.io/${var.gcp_project_id}/simpletimeservice:latest"
+        image = "docker.io/pt859022535/simple-time-service:latest"
       }
     }
   }
 
-  # Configure service to be accessible from private subnets
-  vpc_access {
-    connector = google_vpc_access_connector.private_vpc_connector.id
-  }
+  # No need for VPC access if no internal VPC resources are used
+  autogenerate_revision_name = true
 }
 
-# VPC Access Connector for Cloud Run (to allow access to private subnets)
-resource "google_vpc_access_connector" "private_vpc_connector" {
-  name     = "private-vpc-connector"
-  region   = "us-central1"
-  network  = google_compute_network.vpc.id
-  subnet   = google_compute_subnetwork.private_subnet_1.name
+# Allow unauthenticated invocations
+resource "google_cloud_run_service_iam_binding" "simpletimeservice_invoker" {
+  service = google_cloud_run_service.simpletimeservice.name
+  location = google_cloud_run_service.simpletimeservice.location
+
+  role    = "roles/run.invoker"
+  members = ["allUsers"]
 }
 
-# Create an API Gateway to expose the Cloud Run service
-resource "google_api_gateway_api" "simpletimeservice_api" {
-  name     = "simpletimeservice-api"
-  api_id   = "simpletimeservice-api-id"
-  region   = "us-central1"
+# Output the URL of the Cloud Run service
+output "cloud_run_url" {
+  value = google_cloud_run_service.simpletimeservice.status[0].url
 }
 
-resource "google_api_gateway_api_config" "simpletimeservice_api_config" {
-  api      = google_api_gateway_api.simpletimeservice_api.id
-  name     = "simpletimeservice-api-config"
-  region   = "us-central1"
-
-  gateway_config {
-    api_url = "https://${google_cloud_run_service.simpletimeservice.status[0].url}"
-  }
-}
-
-resource "google_api_gateway_gateway" "simpletimeservice_gateway" {
-  name     = "simpletimeservice-gateway"
-  region   = "us-central1"
-  api      = google_api_gateway_api.simpletimeservice_api.id
-  config   = google_api_gateway_api_config.simpletimeservice_api_config.id
-}
