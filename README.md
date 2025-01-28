@@ -18,7 +18,7 @@ Before you begin, make sure you have the following tools and accounts set up:
 ## Step 1: Clone the Repository
 Clone this repository to your local machine:
  ```
-git clone https://github.com/yourusername/simple-time-service.git
+git clone https://github.com/Dev2108/SimpleTimeService.git
 cd simple-time-service
 ```
 
