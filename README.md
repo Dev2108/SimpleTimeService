@@ -25,7 +25,7 @@ cd simple-time-service
 ## Step 2: Build the image and run the  container
 ```
 cd app
-docker build simple-time-service:latest .
+docker build -t simple-time-service:latest .
 docker run -p 8080:8080 simple-time-service:latest
 ```
 
