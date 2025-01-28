@@ -7,10 +7,8 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    # Get the current timestamp
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-    # Get the client IP address, considering reverse proxy headers
     ip = request.headers.get('X-Forwarded-For', request.remote_addr)
 
     # Return the response in JSON format

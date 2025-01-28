@@ -27,7 +27,7 @@ resource "google_compute_subnetwork" "public_subnet_2" {
   private_ip_google_access = false
 }
 
-# Create Private Subnets (Not needed if Cloud Run doesn't need private VPC access)
+# Create Private Subnets 
 resource "google_compute_subnetwork" "private_subnet_1" {
   name          = "private-subnet-1"
   region        = "us-central1"
@@ -56,7 +56,6 @@ resource "google_cloud_run_service" "simpletimeservice" {
     }
   }
 
-  # No need for VPC access if no internal VPC resources are used
   autogenerate_revision_name = true
 }
 
